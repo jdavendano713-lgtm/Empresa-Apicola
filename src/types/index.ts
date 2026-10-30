@@ -1,4 +1,8 @@
-export type HiveStatus = 'Activa' | 'En revisión' | 'Inactiva';
+export enum HiveStatus {
+  Active = 'Activa',
+  InReview = 'En revisión',
+  Inactive = 'Inactiva',
+}
 
 export interface Hive {
   id: string;
@@ -6,5 +10,5 @@ export interface Hive {
   location: string;
   status: HiveStatus;
   technician: string;
-  imageUrl: string;
+  honeyKg: number;
 }

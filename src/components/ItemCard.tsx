@@ -1,11 +1,18 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Hive } from '../types';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Hive, HiveStatus } from '../types';
+import { COLORS, SPACING, TYPOGRAPHY } from '../theme';
 
 interface ItemCardProps {
   item: Hive;
   onPress: (item: Hive) => void;
 }
+
+const statusColors: Record<HiveStatus, string> = {
+  [HiveStatus.Active]: COLORS.success,
+  [HiveStatus.InReview]: COLORS.warning,
+  [HiveStatus.Inactive]: COLORS.danger,
+};
 
 const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
   return (
@@ -13,14 +20,16 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
       onPress={() => onPress(item)}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
-      <Image source={{ uri: item.imageUrl }} style={styles.image} />
-      <View style={styles.info}>
+      <View style={styles.row}>
         <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.subtitle}>{item.location}</Text>
-        <View style={styles.footer}>
-          <Text style={styles.technician}>{item.technician}</Text>
-          <Text style={styles.status}>{item.status}</Text>
+        <View style={[styles.badge, { backgroundColor: statusColors[item.status] }]}>
+          <Text style={styles.badgeText}>{item.status}</Text>
         </View>
+      </View>
+      <Text style={styles.location}>{item.location}</Text>
+      <View style={styles.row}>
+        <Text style={styles.detail}>Técnico: {item.technician}</Text>
+        <Text style={styles.detail}>{item.honeyKg} kg de miel</Text>
       </View>
     </Pressable>
   );
@@ -28,53 +37,46 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginBottom: 12,
-    overflow: 'hidden',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    backgroundColor: COLORS.surface,
+    borderRadius: SPACING.md,
+    padding: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   cardPressed: {
-    opacity: 0.7,
-    backgroundColor: '#FFF3C4',
+    backgroundColor: COLORS.pressed,
+    opacity: 0.8,
   },
-  image: {
-    width: 110,
-    height: 110,
-  },
-  info: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'space-between',
-  },
-  name: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#3E2A00',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#7A6A4F',
-  },
-  footer: {
+  row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  technician: {
-    fontSize: 12,
-    fontStyle: 'italic',
-    color: '#555555',
+  name: {
+    flex: 1,
+    fontSize: TYPOGRAPHY.heading,
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
   },
-  status: {
-    fontSize: 12,
+  location: {
+    fontSize: TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    marginVertical: SPACING.xs,
+  },
+  detail: {
+    fontSize: TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
+  },
+  badge: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: SPACING.lg,
+  },
+  badgeText: {
+    fontSize: TYPOGRAPHY.caption,
     fontWeight: '600',
-    color: '#B87300',
+    color: COLORS.surface,
   },
 });
 
