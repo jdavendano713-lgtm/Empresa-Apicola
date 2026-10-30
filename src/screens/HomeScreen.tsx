@@ -1,4 +1,7 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types/navigation';
+
+type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'HivesList'>;import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -19,7 +22,7 @@ import { COLORS, SPACING, TYPOGRAPHY } from '../theme';
 
 const ItemSeparator: React.FC = () => <View style={styles.separator} />;
 
-const HomeScreen: React.FC = () => {
+const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [query, setQuery] = useState<string>('');
 
   const filteredHives = useMemo<Hive[]>(() => {
@@ -36,9 +39,12 @@ const HomeScreen: React.FC = () => {
     );
   }, [query]);
 
-  const handlePress = useCallback((item: Hive): void => {
-    Alert.alert(item.name, `${item.location}\nEstado: ${item.status}`);
-  }, []);
+  const handlePress = useCallback(
+  (item: Hive): void => {
+    navigation.navigate('HiveDetail', { hiveId: item.id });
+  },
+  [navigation],
+);
 
   const renderItem = useCallback<ListRenderItem<Hive>>(
     ({ item }) => <ItemCard item={item} onPress={handlePress} />,
@@ -47,7 +53,7 @@ const HomeScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+     <StatusBar barStyle="dark-content" />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
