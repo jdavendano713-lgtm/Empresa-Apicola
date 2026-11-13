@@ -3,15 +3,23 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { hives } from '../data/mockData';
-import { RootStackParamList } from '../types/navigation';
+import { useSavedStore } from '../stores/savedStore';
+import { HomeStackParamList } from '../types/navigation';
 import { COLORS, SPACING, TYPOGRAPHY } from '../theme';
 
 const HiveDetailScreen: React.FC = () => {
-  const route = useRoute<RouteProp<RootStackParamList, 'HiveDetail'>>();
+  const route = useRoute<RouteProp<HomeStackParamList, 'HiveDetail'>>();
   const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList, 'HiveDetail'>>();
+    useNavigation<NativeStackNavigationProp<HomeStackParamList, 'HiveDetail'>>();
+  const { hiveId } = route.params;
 
-  const hive = hives.find((h) => h.id === route.params.hiveId);
+  const isSaved = useSavedStore((state) =>
+    state.savedItems.some((saved) => saved.id === hiveId),
+  );
+  const addItem = useSavedStore((state) => state.addItem);
+  const removeItem = useSavedStore((state) => state.removeItem);
+
+  const hive = hives.find((h) => h.id === hiveId);
 
   if (!hive) {
     return (
@@ -32,6 +40,19 @@ const HiveDetailScreen: React.FC = () => {
       <Text style={styles.value}>{hive.technician}</Text>
       <Text style={styles.label}>Producción de miel</Text>
       <Text style={styles.value}>{hive.honeyKg} kg</Text>
+
+      <Pressable
+        onPress={() => (isSaved ? removeItem(hive.id) : addItem(hive))}
+        style={({ pressed }) => [
+          styles.button,
+          isSaved && styles.buttonRemove,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={styles.buttonText}>
+          {isSaved ? 'Quitar de guardados' : 'Guardar colmena'}
+        </Text>
+      </Pressable>
 
       <Pressable
         onPress={() => navigation.goBack()}
@@ -71,10 +92,13 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     borderRadius: SPACING.md,
     alignItems: 'center',
-    marginTop: SPACING.xl,
+    marginTop: SPACING.lg,
+  },
+  buttonRemove: {
+    backgroundColor: COLORS.danger,
   },
   buttonPressed: {
-    backgroundColor: COLORS.primaryDark,
+    opacity: 0.7,
   },
   buttonText: {
     fontSize: TYPOGRAPHY.body,
