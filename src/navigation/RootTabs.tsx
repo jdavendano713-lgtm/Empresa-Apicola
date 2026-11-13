@@ -2,7 +2,6 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import HivesStack from './HivesStack';
-import TechniciansScreen from '../screens/TechniciansScreen';
 import { RootTabParamList } from '../types/navigation';
 import { COLORS } from '../theme';
 

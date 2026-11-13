@@ -1,11 +1,11 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
 
-export type RootStackParamList = {
+export type HomeStackParamList = {
   HivesList: undefined;
-  HiveDetail: { hiveId: string };
+  HiveDetail: { hiveId: string; hiveName: string };
 };
 
 export type RootTabParamList = {
-  HivesTab: NavigatorScreenParams<RootStackParamList>;
-  TechniciansTab: undefined;
+  HivesTab: NavigatorScreenParams<HomeStackParamList>;
+  SavedTab: undefined;
 };
