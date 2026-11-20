@@ -12,3 +12,20 @@ export interface Hive {
   technician: string;
   honeyKg: number;
 }
+
+export interface CreateHivePayload {
+  name: string;
+  location: string;
+  status?: HiveStatus;
+  technician?: string;
+  honeyKg?: number;
+}
+
+export interface UpdateHivePayload {
+  id: string;
+  name: string;
+  location: string;
+  status: HiveStatus;
+  technician: string;
+  honeyKg: number;
+}
