@@ -1,11 +1,19 @@
-   import React from 'react';
-   import { NavigationContainer } from '@react-navigation/native';
-   import RootTabs from './src/navigation/RootTabs';
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import RootNavigator from './src/navigation/RootNavigator';
 
-   export default function App(): React.JSX.Element {
-     return (
-       <NavigationContainer>
-         <RootTabs />
-       </NavigationContainer>
-     );
-   }
+const queryClient = new QueryClient();
+
+export default function App(): React.JSX.Element {
+  return (
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <NavigationContainer>
+          <RootNavigator />
+        </NavigationContainer>
+      </QueryClientProvider>
+    </SafeAreaProvider>
+  );
+}

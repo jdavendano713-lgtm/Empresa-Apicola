@@ -1,31 +1,38 @@
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types/navigation';
-
-type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'HivesList'>;import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
-  Alert,
+  ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   ListRenderItem,
   Platform,
-  SafeAreaView,
+  Pressable,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import ItemCard from '../components/ItemCard';
-import { hives } from '../data/mockData';
+import { useItems } from '../hooks/useItems';
+import { MainTabParamList, RootStackParamList } from '../navigation/types';
 import { Hive } from '../types';
 import { COLORS, SPACING, TYPOGRAPHY } from '../theme';
+
+type HomeScreenProps = BottomTabScreenProps<MainTabParamList, 'HomeTab'>;
 
 const ItemSeparator: React.FC = () => <View style={styles.separator} />;
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [query, setQuery] = useState<string>('');
+  const { data, isLoading, isError, error, refetch, isFetching } = useItems();
+
+  const stackNav = navigation.getParent<NativeStackNavigationProp<RootStackParamList>>();
 
   const filteredHives = useMemo<Hive[]>(() => {
+    const hives = data ?? [];
     const text = query.trim().toLowerCase();
     if (text === '') {
       return hives;
@@ -35,34 +42,91 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         hive.name.toLowerCase().includes(text) ||
         hive.location.toLowerCase().includes(text) ||
         hive.technician.toLowerCase().includes(text) ||
-        hive.status.toLowerCase().includes(text),
+        String(hive.status).toLowerCase().includes(text),
     );
-  }, [query]);
+  }, [data, query]);
 
   const handlePress = useCallback(
-  (item: Hive): void => {
-    navigation.navigate('HiveDetail', { hiveId: item.id });
-  },
-  [navigation],
-);
+    (item: Hive): void => {
+      stackNav?.navigate('Detail', { itemId: item.id, itemName: item.name });
+    },
+    [stackNav],
+  );
 
   const renderItem = useCallback<ListRenderItem<Hive>>(
     ({ item }) => <ItemCard item={item} onPress={handlePress} />,
     [handlePress],
   );
 
+  const renderBody = (): React.JSX.Element => {
+    if (isLoading) {
+      return (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={COLORS.primaryDark} />
+          <Text style={styles.centerText}>Cargando colmenas...</Text>
+        </View>
+      );
+    }
+
+    if (isError) {
+      return (
+        <View style={styles.center}>
+          <Text style={styles.errorTitle}>⚠️ No se pudo cargar</Text>
+          <Text style={styles.centerText}>{error.message}</Text>
+          <Pressable
+            onPress={() => refetch()}
+            style={({ pressed }) => [styles.retry, pressed && styles.retryPressed]}
+          >
+            <Text style={styles.retryText}>Reintentar</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    return (
+      <FlatList<Hive>
+        data={filteredHives}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        ItemSeparatorComponent={ItemSeparator}
+        contentContainerStyle={styles.list}
+        keyboardShouldPersistTaps="handled"
+        refreshing={isFetching}
+        onRefresh={refetch}
+        ListEmptyComponent={
+          <View style={styles.center}>
+            <Text style={styles.errorTitle}>🍯 Sin resultados</Text>
+            <Text style={styles.centerText}>
+              {query === ''
+                ? 'Aún no hay colmenas registradas.'
+                : `No encontramos colmenas que coincidan con "${query}".`}
+            </Text>
+          </View>
+        }
+      />
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-     <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="dark-content" />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>🐝 Empresa Apícola</Text>
-          <Text style={styles.headerSubtitle}>
-            {filteredHives.length} colmenas encontradas
-          </Text>
+          <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>🐝 Empresa Apícola</Text>
+            <Text style={styles.headerSubtitle}>
+              {filteredHives.length} colmenas encontradas
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => stackNav?.navigate('Create')}
+            style={({ pressed }) => [styles.addButton, pressed && styles.addPressed]}
+          >
+            <Text style={styles.addText}>+ Nueva</Text>
+          </Pressable>
         </View>
         <TextInput
           style={styles.search}
@@ -71,24 +135,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           value={query}
           onChangeText={setQuery}
           autoCorrect={false}
-          clearButtonMode="while-editing"
         />
-        <FlatList<Hive>
-          data={filteredHives}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          ItemSeparatorComponent={ItemSeparator}
-          contentContainerStyle={styles.list}
-          keyboardShouldPersistTaps="handled"
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>🍯 Sin resultados</Text>
-              <Text style={styles.emptyText}>
-                No encontramos colmenas que coincidan con "{query}".
-              </Text>
-            </View>
-          }
-        />
+        {renderBody()}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -103,9 +151,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: COLORS.primary,
     paddingVertical: SPACING.xl,
     paddingHorizontal: SPACING.lg,
+  },
+  headerText: {
+    flex: 1,
   },
   headerTitle: {
     fontSize: TYPOGRAPHY.title,
@@ -114,6 +168,20 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: TYPOGRAPHY.subtitle,
+    color: COLORS.textPrimary,
+  },
+  addButton: {
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: SPACING.md,
+  },
+  addPressed: {
+    opacity: 0.7,
+  },
+  addText: {
+    fontSize: TYPOGRAPHY.body,
+    fontWeight: 'bold',
     color: COLORS.textPrimary,
   },
   search: {
@@ -135,22 +203,37 @@ const styles = StyleSheet.create({
   separator: {
     height: SPACING.md,
   },
-  empty: {
+  center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.xl,
+    padding: SPACING.xl,
   },
-  emptyTitle: {
-    fontSize: TYPOGRAPHY.heading,
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-  },
-  emptyText: {
+  centerText: {
     fontSize: TYPOGRAPHY.body,
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: SPACING.sm,
+  },
+  errorTitle: {
+    fontSize: TYPOGRAPHY.heading,
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
+  },
+  retry: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderRadius: SPACING.md,
+    marginTop: SPACING.lg,
+  },
+  retryPressed: {
+    opacity: 0.7,
+  },
+  retryText: {
+    fontSize: TYPOGRAPHY.body,
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
   },
 });
 
